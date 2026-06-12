@@ -14,6 +14,8 @@ Claude Code discovers it automatically.
 | Skill | What it does | Status |
 |-------|--------------|--------|
 | [`mabl-pre-pr-check`](mabl-pre-pr-check) | Analyzes your current commit, finds the mabl tests most relevant to what changed, and runs them locally for fast pre-PR feedback. | ✅ Stable |
+| [`mabl-app-context`](mabl-app-context) | Generates an app-context briefing for mabl's test-creation agent from your **front-end source code** (pages, personas, flows, selectors, quirks). | ✅ Stable |
+| [`mabl-app-context-crawl`](mabl-app-context-crawl) | Generates the same briefing by **crawling a deployed app** in a browser — no source needed (black-box sibling). | ✅ Stable |
 | _more coming_ | | |
 
 > Each skill has its own `README.md` with skill-specific usage and notes. This top-level
