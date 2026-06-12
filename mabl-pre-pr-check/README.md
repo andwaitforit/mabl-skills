@@ -24,7 +24,7 @@ without waiting on CI or a cloud plan run.
 | **Local dev server running** | Tests exercise your uncommitted code | e.g. `npm run dev` |
 
 Setup help:
-- Install the CLI: `npm install -g @mabl/cli` (or `brew install mabl`), then `mabl auth login`.
+- Install the CLI: `npm install -g @mablhq/mabl-cli`, then `mabl auth login`.
 - Connect the mabl MCP server: `mabl agent install <target>` (installs the mabl MCP entry +
   debug skill into supported AI tools), or add it to your MCP client config manually.
 

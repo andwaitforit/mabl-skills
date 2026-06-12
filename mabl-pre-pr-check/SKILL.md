@@ -54,7 +54,7 @@ Run these checks first and fix/surface any gap before proceeding:
    ```bash
    mabl --version && mabl auth info
    ```
-   - Missing CLI → tell the user to `npm install -g @mabl/cli` (or `brew install mabl`) and stop.
+   - Missing CLI → tell the user to `npm install -g @mablhq/mabl-cli` and stop.
    - Not logged in / expired → instruct `mabl auth login` (or `mabl auth activate-key <key>`) and stop.
 
 2. **mabl MCP required.** This skill needs the mabl MCP server for semantic test matching (`get_mabl_tests` returns descriptions + step summaries — the CLI's `tests list` returns names only, which isn't enough to map a diff to coverage reliably).
