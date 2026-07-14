@@ -17,6 +17,8 @@ Claude Code discovers it automatically.
 | [`mabl-app-context`](mabl-app-context) | Generates an app-context briefing for mabl's test-creation agent from your **front-end source code** (pages, personas, flows, selectors, quirks). | ✅ Stable |
 | [`mabl-app-context-crawl`](mabl-app-context-crawl) | Generates the same briefing by **crawling a deployed app** in a browser — no source needed (black-box sibling). | ✅ Stable |
 | [`mabl-failure-rca`](mabl-failure-rca) | Root-causes a **failed test run** against the source: pulls mabl's AI analysis + artifacts (DOM, HAR, console), correlates with code, and classifies the failure. | ✅ Stable |
+| [`mabl-dom-sanitizer`](mabl-dom-sanitizer) | Strips executable JavaScript from a captured mabl DOM snapshot so it can be opened locally without the app forcing a logout/re-hydration. | ✅ Stable |
+| [`feature-dev`](feature-dev) | Orchestrates the full **plan → build → test → ship** lifecycle for a feature — Jira epic, browser-verified build, mabl test coverage, PR — by composing the other skills. | 📋 Template (fill in placeholders) |
 | _more coming_ | | |
 
 > Each skill has its own `README.md` with skill-specific usage and notes. This top-level
