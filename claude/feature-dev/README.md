@@ -99,15 +99,13 @@ invoking the skill.
 
 ## Configuration — adapt the project constants
 
-`SKILL.md` contains a **Project constants** table that hard-codes the values for
-*this* demo repo (Jira project key, mabl workspace / application / environment
-ids, local URL, test credentials).
+[`SKILL.md`](./SKILL.md) ships as a **template**: every project-specific value
+(Jira project key, mabl workspace / application / environment ids, local URL,
+test credentials) is a `<PLACEHOLDER>`, and the **Project constants** table
+includes a "How to find it" column telling you where each comes from.
 
-**Reusing this skill in another repo? Start from
-[`SKILL.template.md`](./SKILL.template.md)** — a portable, project-agnostic copy
-where every project-specific value is a `<PLACEHOLDER>` and the constants table
-includes a "How to find it" column. Fill it in, generalize/trim the gotchas for
-your stack, then rename it to `SKILL.md` so Claude Code loads it.
+Fill the table in and generalize/trim the gotchas for your stack before use —
+Claude Code loads `SKILL.md` as-is, placeholders and all.
 
 The values you'll need to supply:
 
