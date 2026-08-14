@@ -57,12 +57,12 @@ Run these checks first and fix/surface any gap before proceeding:
    - Missing CLI → tell the user to `npm install -g @mablhq/mabl-cli` and stop.
    - Not logged in / expired → instruct `mabl auth login` (or `mabl auth activate-key <key>`) and stop.
 
-2. **mabl MCP required.** This skill needs the mabl MCP server for semantic test matching (`get_mabl_tests` returns descriptions + step summaries — the CLI's `tests list` returns names only, which isn't enough to map a diff to coverage reliably).
+2. **mabl MCP required.** This skill needs the mabl MCP server for semantic test matching (`search_mabl_tests` returns descriptions + step summaries — the CLI's `tests list` returns names only, which isn't enough to map a diff to coverage reliably).
    - Check whether the `mcp__mabl__*` tools are present in this session.
    - **Not connected** → stop and tell the user to add the mabl MCP server, then re-run. Point them at `mabl agent install <target>` (installs the mabl MCP entry + debug skill into supported editors) or their MCP client config. Do not attempt a degraded CLI-only match.
 
 3. **Workspace:** resolve the target workspace once and reuse it.
-   - If the user named one, match it against `mabl workspaces list` (or MCP `get_workspaces`).
+   - If the user named one, match it against `mabl workspaces list` (or MCP `list_mabl_workspaces`).
    - Else read a saved default: `mabl config get workspace-id` — or a `MABL_WORKSPACE_ID` you've stored in the project's `.claude/` config.
    - Else list workspaces and ask which one (then offer to save it via `mabl config set workspace-id <id>` so future runs are zero-prompt).
 
@@ -111,7 +111,7 @@ can sanity-check the framing before you search.
 
 ## Step 3 — Discover relevant tests
 
-Run MCP `get_mabl_tests` once per query (pass `workspaceId`), then merge and
+Run MCP `search_mabl_tests` once per query (pass `workspaceId`), then merge and
 de-duplicate by test id. Use the returned `description` + `stepsChunks` to judge fit.
 
 Rank candidates by relevance (exact flow match > same feature area > tangential). Drop
@@ -165,8 +165,8 @@ both the local exit code and the published cloud run.
 
 First resolve the test's `applicationId` (and environment) so the cloud run associates
 correctly — `--reporter mabl` works best with `--application-id` (and `--environment-id`):
-- `applicationId` → from `get_mabl_test_details` for the test.
-- `environmentId` → from `get_environments` for the workspace (the test's default env, or
+- `applicationId` → from `get_mabl_test` for the test.
+- `environmentId` → from `list_mabl_environments` for the workspace (the test's default env, or
   the one matching the target). If genuinely ambiguous, omit it and let the test default apply.
 
 ```bash
@@ -187,7 +187,7 @@ mabl tests run \
 
 **Billable / AI assertions.** Local CLI runs **disable GenAI and visual assertions by
 default** — any such step auto-fails with "AI assertions are not available in CLI runs."
-Before running, check the test's steps (from `get_mabl_test_details`) for GenAI/visual
+Before running, check the test's steps (from `get_mabl_test`) for GenAI/visual
 assertions. If present, either:
 - add `--allow-billable-features` to run them for real (consumes mabl credits — confirm with the user first), or
 - run without the flag but **treat a failure on only those steps as a harness skip, not a
@@ -201,9 +201,9 @@ window — that's invisible to the agent).
    failed. Determine pass/fail from the `run.log` summary block — parse the
    `Passed:` / `Failed:` counts (and the per-test `Test Failed` / `Test Passed` line).
 2. **Confirm via the published cloud run** (authoritative): call MCP
-   `get_latest_test_runs(testId, workspaceId)` — returns the latest run's `status`,
+   `list_mabl_test_runs(testId, workspaceId)` — returns the latest run's `status`,
    `testRunId`, environment, and (on failure) an AI-generated `errorMessage`. For deeper
-   analysis use `mabl_result_analysis_chat` / `analyze_failure(testRunId)`.
+   analysis use `analyze_mabl_results` / `analyze_mabl_failure(testRunId)`.
 3. **Read which step failed** from `run.log` and judge whether it's a *code* failure vs a
    *harness* limitation — e.g. a GenAI/visual assertion that was skipped (see billable note
    below) is NOT a regression in the user's change. Report that distinction explicitly.
@@ -248,6 +248,66 @@ verdict directly. In Mode B, ask the user for the terminal output first.
 - Optionally suggest `mabl agent debug` for deeper local failure analysis.
 - If Step 3 found **no coverage**, flag it as a gap and offer to draft a new mabl test
   for the changed flow.
+
+---
+
+## Step 7 — Emit machine-readable output (loop mode)
+
+So this skill can drive an automated verification loop (and be parsed by a headless
+runner), end your response with two contract objects. Prose for the human comes first;
+the JSON blocks come last. Full reference: [`docs/loop-contracts.md`](../../docs/loop-contracts.md).
+
+**One `impact` block** — answers Q1 "which tests are affected" + Q2 "which will run":
+
+```json
+{
+  "schema": "impact",
+  "schemaVersion": "1.0",
+  "changeRef": "HEAD",
+  "changedAreas": ["src/pages/ReportsDashboard.tsx"],
+  "inferredFlows": ["Reports dashboard — recent activity card"],
+  "affectedTests": [
+    {
+      "testId": "AbC123-j",
+      "name": "Reports Dashboard — Recent Activity",
+      "type": "browser",
+      "matchStrength": "strong",
+      "willRun": true,
+      "reason": "direct flow match"
+    }
+  ],
+  "runSet": ["AbC123-j"],
+  "coverageZeroMatch": false,
+  "workspaceId": "<workspace-id>-w"
+}
+```
+
+**One `runResult` block per executed test**:
+
+```json
+{
+  "schema": "runResult",
+  "schemaVersion": "1.0",
+  "testId": "AbC123-j",
+  "testRunId": "XyZ789-jr",
+  "status": "passed",
+  "failingStep": null,
+  "runUrl": "https://app.mabl.com/workspaces/.../runs/XyZ789-jr",
+  "billableSkipped": false,
+  "target": "http://localhost:3000"
+}
+```
+
+- `matchStrength`: `strong | partial | tangential`; `status`: `passed | failed | error`.
+- Set `impact.coverageZeroMatch: true` when Step 3 found no match — the loop routes
+  that to `mabl-coverage-gap`.
+- Mark `runResult.billableSkipped: true` for any test whose only red steps were
+  GenAI/visual assertions skipped locally — downstream skills must not treat that as
+  a code regression.
+- Any `runResult` with `status: failed|error` is the handoff to `mabl-failure-rca`.
+
+This section is additive: skip it for a purely interactive, one-off check; always emit
+it when invoked as part of `feature-dev` or an automated loop.
 
 ---
 

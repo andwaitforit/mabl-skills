@@ -112,8 +112,8 @@ The values you'll need to supply:
 | Constant | How to find it |
 |----------|----------------|
 | mabl workspace id | `mabl auth info`, or the mabl app URL `…/workspaces/<id>/…` |
-| mabl application / environment ids | mabl app, or the `mabl`-MCP `get_environments` / app settings |
-| mabl credentials ids | the `mabl`-MCP `get_credentials` tool (note which is admin vs. client) |
+| mabl application / environment ids | mabl app, or the `mabl`-MCP `list_mabl_environments` / app settings |
+| mabl credentials ids | the `mabl`-MCP `list_mabl_credentials` tool (note which is admin vs. client) |
 | Jira cloudId / project key | Atlassian MCP `getAccessibleAtlassianResources` / `getVisibleJiraProjects` |
 | Local dev URL + test creds | your app |
 

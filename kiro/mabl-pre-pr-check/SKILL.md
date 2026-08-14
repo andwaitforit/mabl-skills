@@ -276,6 +276,66 @@ You have the `run.log` summary + the published cloud run, so state the verdict d
 
 ---
 
+## Step 7 — Emit machine-readable output (loop mode)
+
+So this skill can drive an automated verification loop (and be parsed by a headless
+runner), end your response with two contract objects. Prose for the human comes first;
+the JSON blocks come last. Full reference: [`docs/loop-contracts.md`](../../docs/loop-contracts.md).
+
+**One `impact` block** — answers Q1 "which tests are affected" + Q2 "which will run":
+
+```json
+{
+  "schema": "impact",
+  "schemaVersion": "1.0",
+  "changeRef": "HEAD",
+  "changedAreas": ["src/pages/ReportsDashboard.tsx"],
+  "inferredFlows": ["Reports dashboard — recent activity card"],
+  "affectedTests": [
+    {
+      "testId": "AbC123-j",
+      "name": "Reports Dashboard — Recent Activity",
+      "type": "browser",
+      "matchStrength": "strong",
+      "willRun": true,
+      "reason": "direct flow match"
+    }
+  ],
+  "runSet": ["AbC123-j"],
+  "coverageZeroMatch": false,
+  "workspaceId": "<workspace-id>-w"
+}
+```
+
+**One `runResult` block per executed test**:
+
+```json
+{
+  "schema": "runResult",
+  "schemaVersion": "1.0",
+  "testId": "AbC123-j",
+  "testRunId": "XyZ789-jr",
+  "status": "passed",
+  "failingStep": null,
+  "runUrl": "https://app.mabl.com/workspaces/.../runs/XyZ789-jr",
+  "billableSkipped": false,
+  "target": "http://localhost:3000"
+}
+```
+
+- `matchStrength`: `strong | partial | tangential`; `status`: `passed | failed | error`.
+- Set `impact.coverageZeroMatch: true` when Step 3 found no match — the loop routes
+  that to `mabl-coverage-gap`.
+- Mark `runResult.billableSkipped: true` for any test whose only red steps were
+  GenAI/visual assertions skipped locally — downstream skills must not treat that as
+  a code regression.
+- Any `runResult` with `status: failed|error` is the handoff to `mabl-failure-rca`.
+
+This section is additive: skip it for a purely interactive, one-off check; always emit
+it when invoked as part of `feature-dev` or an automated loop.
+
+---
+
 ## Decision defaults (don't ask unless it matters)
 
 - Commit to analyze: `HEAD` (or `--working` when the tree is dirty and the dev server is serving it).

@@ -59,10 +59,10 @@ environment may have changed.
 |-------|-------|----------------|
 | Atlassian cloudId | `<ATLASSIAN_CLOUD_ID>` (site `<your-site>.atlassian.net`) | Atlassian MCP `getAccessibleAtlassianResources` |
 | Default Jira project | `<PROJECT_NAME>` — key `<KEY>` (Epic issue type id `<EPIC_TYPE_ID>`) — confirm with the user; they may name another project/"space" | Atlassian MCP `getVisibleJiraProjects` / `getJiraProjectIssueTypesMetadata` |
-| mabl workspace | `<WORKSPACE_NAME>` — `<WORKSPACE_ID>` | `mabl auth info`, or the mabl app URL `…/workspaces/<id>/…`, or `mabl`-MCP `get_workspaces` |
-| mabl applicationId | `<APPLICATION_ID>` | `mabl`-MCP `get_applications`, or the mabl app |
-| mabl environment (local) | `<ENV_NAME>` — `<ENVIRONMENT_ID>` | `mabl`-MCP `get_environments` |
-| mabl credentials ids | `<CRED_NAME>` — `<CREDENTIALS_ID>` (one per persona; note which is admin) | `mabl`-MCP `get_credentials` |
+| mabl workspace | `<WORKSPACE_NAME>` — `<WORKSPACE_ID>` | `mabl auth info`, or the mabl app URL `…/workspaces/<id>/…`, or `mabl`-MCP `list_mabl_workspaces` |
+| mabl applicationId | `<APPLICATION_ID>` | `mabl`-MCP `list_mabl_applications`, or the mabl app |
+| mabl environment (local) | `<ENV_NAME>` — `<ENVIRONMENT_ID>` | `mabl`-MCP `list_mabl_environments` |
+| mabl credentials ids | `<CRED_NAME>` — `<CREDENTIALS_ID>` (one per persona; note which is admin) | `mabl`-MCP `list_mabl_credentials` |
 | Local dev server | `<LOCAL_URL>` (e.g. `http://localhost:3000`; start with `<DEV_SERVER_COMMAND>`) | your app |
 | Test creds | `<USERNAME>` / `<PASSWORD>` (per persona) | your app |
 
@@ -122,7 +122,7 @@ environment may have changed.
      --auto-save --verbose` as a **background** process; the harness notifies you
      on completion. Logs are huge — `grep` for `createdTestId` / `Test saved` /
      `Generated Steps`.
-   - Fix stale **metadata** (name/description) afterward with `edit_mabl_test`
+   - Fix stale **metadata** (name/description) afterward with `edit_mabl_test_metadata`
      if the authoring agent only updated steps.
 3. **Run existing + new tests locally** (background, publishes to cloud). One
    test per `mabl tests run --id <id> -w <WORKSPACE_ID> --url <LOCAL_URL>
@@ -130,7 +130,7 @@ environment may have changed.
    --reporter mabl [--allow-billable-features]`. Run sequentially (shared dev
    server). Do **not** pass `--keep-browser-open` in background (it blocks exit).
 4. **Triage** — parse `run.log` `Passed:`/`Failed:` (exit code alone is
-   unreliable) and confirm via `get_latest_test_runs`. For each failure,
+   unreliable) and confirm via `list_mabl_test_runs`. For each failure,
    separate a **code regression** (cross-reference the failing step against the
    diff) from a **test/harness issue** (brittle assertion, GenAI skip, stale
    selector, data).
@@ -204,7 +204,7 @@ assume.
   user see different landing titles and nav items). If a test's
   assertions/selectors were authored for one persona, run it with that persona's
   credentials id via `--credentials-id` — a local run won't pick the right one
-  on its own. Look up ids with `get_credentials` (note which creds are
+  on its own. Look up ids with `list_mabl_credentials` (note which creds are
   cloud-only and can't run locally).
 - **`--reporter mabl`** publishes a shareable cloud run + history while executing
   locally (no cloud credits for execution); resolve `--application-id` and

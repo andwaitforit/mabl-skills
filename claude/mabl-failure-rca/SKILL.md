@@ -48,10 +48,10 @@ Not for: authoring tests (`mabl-test-from-requirement`), or running tests (`mabl
 ## Step 0 — Preflight
 
 1. **CLI + auth:** `mabl --version && mabl auth info`. Missing → `npm install -g @mablhq/mabl-cli`; expired → `mabl auth login`. Stop on failure.
-2. **mabl MCP required** — this skill uses `analyze_failure`, `get_test_run_artifact`, etc. If the `mcp__mabl__*` tools aren't present, stop and ask the user to connect the mabl MCP server (`mabl agent install <target>`).
-3. **Workspace:** resolve once (named arg → `get_workspaces`; else `mabl config get workspace-id`; else ask).
+2. **mabl MCP required** — this skill uses `analyze_mabl_failure`, `get_mabl_test_run_artifact`, etc. If the `mcp__mabl__*` tools aren't present, stop and ask the user to connect the mabl MCP server (`mabl agent install <target>`).
+3. **Workspace:** resolve once (named arg → `list_mabl_workspaces`; else `mabl config get workspace-id`; else ask).
 4. **Source repo:** confirm `--repo` (or cwd) is the app under test (`git rev-parse --is-inside-work-tree`). Sanity-check it's the right app (package name / known routes) before correlating — RCA against the wrong repo is worse than none.
-5. **AI entitlement caveat:** `analyze_failure` / result-analysis chat require the workspace's AI features to be on. You can't know until you call; if it returns `analysis_unavailable`, fall back to artifacts + step data and say AI analysis was unavailable.
+5. **AI entitlement caveat:** `analyze_mabl_failure` / result-analysis chat require the workspace's AI features to be on. You can't know until you call; if it returns `analysis_unavailable`, fall back to artifacts + step data and say AI analysis was unavailable.
 
 ---
 
@@ -61,8 +61,8 @@ End state: a single failed **testRunId (`-jr`)** in a known workspace.
 
 - Given a `-jr` → use it directly.
 - Given a mabl URL → extract the run id from it.
-- Given a test id (`-j`) or test name → `get_latest_test_runs(testId, workspaceId)`; pick the most recent `failed` run (confirm with the user if several).
-- Given a plan run (`-pr`) → `get_plan_run_result(planRunId, workspaceId)`, list the failed test runs, and pick (or ask which) to drill into. RCA one failing test run at a time.
+- Given a test id (`-j`) or test name → `list_mabl_test_runs(testId, workspaceId)`; pick the most recent `failed` run (confirm with the user if several).
+- Given a plan run (`-pr`) → `get_mabl_plan_run(planRunId, workspaceId)`, list the failed test runs, and pick (or ask which) to drill into. RCA one failing test run at a time.
 
 Record the `testRunId`, test name, environment, and completion time.
 
@@ -70,13 +70,13 @@ Record the `testRunId`, test name, environment, and completion time.
 
 ## Step 2 — Pull mabl's AI failure analysis
 
-1. **Failure record:** `analyze_failure(runId=<testRunId>, testOrPlan='test', workspaceId, includeEvidence: true)`.
+1. **Failure record:** `analyze_mabl_failure(runId=<testRunId>, testOrPlan='test', workspaceId, includeEvidence: true)`.
    Capture the **synopsis**, **Root cause** + **Next steps** markdown, and the **evidenceDetails**
    (it contains the `gs://` artifact URIs and any historical trend / cross-run data). This is your spine.
 2. **Auto-heal?** If the synopsis/evidence mentions the Runtime Recovery Agent, healing, or a resumed
    step, call `get_runtime_recovery_session(testRunId, workspaceId)` to see what it changed — a run
    that "passed via healing" often signals selector drift worth fixing at the source.
-3. **History / "since green" (optional but valuable):** `mabl_result_analysis_chat(entity='test_run',
+3. **History / "since green" (optional but valuable):** `analyze_mabl_results(entity='test_run',
    targetId=<testRunId>, workspaceId, initialUserMessage='What changed since this test last passed?')`
    to learn when it started failing — that window scopes the suspect commits in Step 4.
 
@@ -90,7 +90,7 @@ URL / network request) — these drive everything downstream.
 Two complementary paths — use both as needed:
 
 **A. Inline, surgical (MCP).** For the specific artifacts named in `evidenceDetails`, call
-`get_test_run_artifact(artifactUri, workspaceId)`:
+`get_mabl_test_run_artifact(artifactUri, workspaceId)`:
 - **Screenshot** at the failing step → returns inline PNG; look at the rendered state.
 - **DOM snapshot** at the failing step → confirm whether the expected element is present/changed.
 - **Console logs** → JS exceptions around the failure.
@@ -150,6 +150,50 @@ Then clean up the export dir if you created one and the user doesn't want it kep
 
 ---
 
+## Step 6 — Emit machine-readable verdict (loop mode)
+
+So `mabl-triage-router` can act on the classification, end your response with one
+`failureVerdict` block. Prose report first; JSON last. Full reference:
+[`docs/loop-contracts.md`](../../docs/loop-contracts.md).
+
+```json
+{
+  "schema": "failureVerdict",
+  "schemaVersion": "1.0",
+  "testRunId": "XyZ789-jr",
+  "class": "product",
+  "confidence": 0.82,
+  "needsTestUpdate": false,
+  "failingStep": "Assert Recent Activity card shows 3 rows",
+  "expected": "3 activity rows",
+  "actual": "empty state",
+  "evidence": [
+    "DOM at step 7 missing [data-testid=recent-activity]",
+    "HAR: GET /api/users/3/activity -> 500"
+  ],
+  "sourceRef": { "file": "src/controllers/activity.ts", "line": 42 },
+  "suspectCommits": ["<sha>"],
+  "suggestedFix": "Guard null account in activity controller",
+  "autoHealCandidate": false,
+  "runUrl": "https://app.mabl.com/workspaces/.../runs/XyZ789-jr"
+}
+```
+
+Field mapping from Step 5:
+
+- `class` ← the verdict: `product` | `stale-test` | `env-data` | `mabl-flake`.
+- `needsTestUpdate` ← **true** for `stale-test` (answers Q4); set
+  `autoHealCandidate: true` when only a selector moved.
+- `confidence` ← your honest 0–1. `mabl-triage-router` sends anything below its floor
+  to a human instead of auto-repairing, so don't inflate it.
+- `sourceRef` ← the pinpointed `{file, line}`; `suspectCommits` ← the blame window;
+  `suggestedFix` ← the concrete change (the diff sketch for a product bug).
+
+Skip this for a purely interactive one-off RCA; always emit it inside `feature-dev`
+or an automated loop so `mabl-triage-router` has something to branch on.
+
+---
+
 ## Decision defaults (don't ask unless it matters)
 
 - Run: the one referenced; if only a test was named, the latest `failed` run (confirm if ambiguous).
@@ -160,7 +204,7 @@ Then clean up the export dir if you created one and the user doesn't want it kep
 
 ## Limitations
 
-- AI failure analysis (`analyze_failure`, result-analysis chat) requires the workspace's AI features
+- AI failure analysis (`analyze_mabl_failure`, `analyze_mabl_results`) requires the workspace's AI features
   to be enabled; otherwise rely on artifacts + step data and say so.
 - Video and email artifacts, and internal support logs, are not exposed to agents (`access_restricted`).
 - RCA quality depends on the repo matching the app under test — ideally at the revision the run

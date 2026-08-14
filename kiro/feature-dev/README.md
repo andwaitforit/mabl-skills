@@ -57,11 +57,11 @@ before shipping. It never opens or merges a PR on its own.
 
 Phase 1 asks you to name the `data-testid`s in `design.md`, and that isn't bookkeeping.
 mabl's authoring agent gets steps **right** when it's handed a literal selector
-(`button[aria-label="Remove Sweetums"]`) and **guesses** when it's handed intent
-("un-track Sweetums") — in one observed run it generated a click on the *add* button for an
-unrelated stock, inside an `IF` branch that never executed during authoring, so validation
-passed and the defect would have shipped silently. Writing the selectors down in Phase 1 is
-what makes Phase 3 reliable.
+(`button[aria-label="Remove item"]`) and **guesses** when it's handed intent ("remove the
+item from the list"). In one observed run, a spec written as intent produced a click on the
+*add* button for an unrelated row — inside an `IF` branch that never executed during
+authoring, so validation passed and the defect would have shipped silently. Writing the
+selectors down in Phase 1 is what makes Phase 3 reliable.
 
 ## Kiro-specific notes
 

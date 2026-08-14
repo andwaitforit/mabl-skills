@@ -164,6 +164,50 @@ Then clean up the export dir if you created one and the user doesn't want it kep
 
 ---
 
+## Step 6 — Emit machine-readable verdict (loop mode)
+
+So `mabl-triage-router` can act on the classification, end your response with one
+`failureVerdict` block. Prose report first; JSON last. Full reference:
+[`docs/loop-contracts.md`](../../docs/loop-contracts.md).
+
+```json
+{
+  "schema": "failureVerdict",
+  "schemaVersion": "1.0",
+  "testRunId": "XyZ789-jr",
+  "class": "product",
+  "confidence": 0.82,
+  "needsTestUpdate": false,
+  "failingStep": "Assert Recent Activity card shows 3 rows",
+  "expected": "3 activity rows",
+  "actual": "empty state",
+  "evidence": [
+    "DOM at step 7 missing [data-testid=recent-activity]",
+    "HAR: GET /api/users/3/activity -> 500"
+  ],
+  "sourceRef": { "file": "src/controllers/activity.ts", "line": 42 },
+  "suspectCommits": ["<sha>"],
+  "suggestedFix": "Guard null account in activity controller",
+  "autoHealCandidate": false,
+  "runUrl": "https://app.mabl.com/workspaces/.../runs/XyZ789-jr"
+}
+```
+
+Field mapping from Step 5:
+
+- `class` ← the verdict: `product` | `stale-test` | `env-data` | `mabl-flake`.
+- `needsTestUpdate` ← **true** for `stale-test` (answers Q4); set
+  `autoHealCandidate: true` when only a selector moved.
+- `confidence` ← your honest 0–1. `mabl-triage-router` sends anything below its floor
+  to a human instead of auto-repairing, so don't inflate it.
+- `sourceRef` ← the pinpointed `{file, line}`; `suspectCommits` ← the blame window;
+  `suggestedFix` ← the concrete change (the diff sketch for a product bug).
+
+Skip this for a purely interactive one-off RCA; always emit it inside `feature-dev`
+or an automated loop so `mabl-triage-router` has something to branch on.
+
+---
+
 ## Decision defaults (don't ask unless it matters)
 
 - Run: the one referenced; if only a test was named, the latest `failed` run (confirm if ambiguous).
