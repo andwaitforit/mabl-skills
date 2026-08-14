@@ -9,7 +9,7 @@ issue, or a flake.
 ## Prerequisites
 
 - **mabl CLI** installed & authenticated (`mabl --version && mabl auth info`).
-- **mabl MCP server** connected — the skill uses `analyze_failure`, `get_test_run_artifact`,
+- **mabl MCP server** connected — the skill uses `analyze_mabl_failure`, `get_mabl_test_run_artifact`,
   result-analysis chat, and recovery-session tools.
 - The **source repo** of the app under test, checked out locally (ideally at the revision the run
   executed against).
@@ -43,9 +43,9 @@ plus links to the mabl run and analysis session.
 ## How it works
 
 1. **Resolve** the input to a concrete failed `testRunId`.
-2. **Pull AI analysis** — `analyze_failure` (synopsis, root cause, evidence URIs); recovery session if
+2. **Pull AI analysis** — `analyze_mabl_failure` (synopsis, root cause, evidence URIs); recovery session if
    auto-heal engaged; "since last green" via result-analysis chat to scope suspect commits.
-3. **Pull artifacts** — surgically inline via `get_test_run_artifact`, and/or in bulk via
+3. **Pull artifacts** — surgically inline via `get_mabl_test_run_artifact`, and/or in bulk via
    `mabl test-runs export <id> --types doms hars console_logs screenshots`.
 4. **Correlate with source** — map the failing selector → component, failed network request → API
    handler, console stack → file; `git log`/`blame` the change window.

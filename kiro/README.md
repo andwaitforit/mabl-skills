@@ -10,8 +10,16 @@ same — these are host-adapted copies, not rewrites.
 | [`mabl-app-context`](mabl-app-context) | Generates an app-context briefing for mabl's test-creation agent from your **front-end source**. |
 | [`mabl-app-context-crawl`](mabl-app-context-crawl) | Generates the same briefing by **crawling a deployed app** in a browser — no source needed. |
 | [`mabl-failure-rca`](mabl-failure-rca) | Root-causes a **failed run** against the source: mabl's AI analysis + artifacts (DOM, HAR, console), classified. |
+| [`mabl-coverage-gap`](mabl-coverage-gap) | Finds user-facing flows your change touches that **no test covers**, rated by severity. |
+| [`mabl-triage-router`](mabl-triage-router) | Decides what the loop does next with a classified failure; enforces loop bounds and human gates. |
+| [`ship-gate`](ship-gate) | `SHIP` / `BLOCK` / `NEEDS_HUMAN` recommendation from the run signal + mabl release readiness. |
+| [`mabl-test-from-requirement`](mabl-test-from-requirement) | Turns a Jira ticket / Confluence page / pasted AC into a new mabl browser or API test. |
 | [`mabl-dom-sanitizer`](mabl-dom-sanitizer) | Strips executable JS from a captured mabl DOM snapshot so it opens locally without forcing a logout. |
 | [`feature-dev`](feature-dev) | Conductor: plan → build → test → ship, built on Kiro specs + Jira + mabl. 📋 Template — fill in placeholders. |
+
+Five of these compose into a **self-driving verification loop** — see
+[`../docs/loop-contracts.md`](../docs/loop-contracts.md) for the JSON contracts they pass
+between each other and how to wire them into an orchestrator.
 
 ---
 
@@ -90,10 +98,14 @@ file. `Atlassian` is only needed by `feature-dev`; `chrome-for-mabl` by
 
 | Server | Needed by |
 |--------|-----------|
-| `mabl` | `mabl-pre-pr-check`, `mabl-failure-rca`, `feature-dev` |
+| `mabl` | `mabl-pre-pr-check`, `mabl-failure-rca`, `mabl-coverage-gap`, `ship-gate`, `mabl-test-from-requirement`, `mabl-triage-router`, `feature-dev` |
 | `chrome-for-mabl` | `mabl-app-context-crawl`, `feature-dev`, `mabl-app-context --live` |
-| `Atlassian` | `feature-dev` |
+| `Atlassian` | `feature-dev`, `mabl-test-from-requirement` (Jira/Confluence sources only) |
 | _(none)_ | `mabl-dom-sanitizer` — pure Python 3 |
+
+`mabl-coverage-gap` and `ship-gate` additionally need the workspace's **AI features**
+enabled (`identify_coverage_gaps`, `check_release_readiness`); both degrade gracefully and
+say so when they're off.
 
 **3. Git**, for the skills that diff your changes.
 
@@ -114,15 +126,8 @@ The instruction bodies are ~90% identical. These are the substantive edits:
 | **Task tracking** | `TaskCreate` / `TaskUpdate` | the spec's `tasks.md` checklist |
 | **Scratch files** | session scratchpad dir | `$HOME/.kiro/tmp/` or `mktemp -d` |
 
-### Known divergence
-
-The Kiro copies use the **current** mabl MCP tool names; the `claude/` tree still carries
-older ones (`get_mabl_tests`, `get_latest_test_runs`, `analyze_failure`, `get_workspaces`,
-`get_credentials`, `get_mabl_test_details`, `get_environments`, `get_plan_run_result`,
-`mabl_result_analysis_chat`, `edit_mabl_test`). The current names are `search_mabl_tests`,
-`list_mabl_test_runs`, `analyze_mabl_failure`, `list_mabl_workspaces`,
-`list_mabl_credentials`, `get_mabl_test`, `list_mabl_environments`, `get_mabl_plan_run`,
-`analyze_mabl_results`, `edit_mabl_test_metadata`. Worth backporting to `claude/`.
+Everything else — the loop contracts, the decision policies, the accumulated gotchas — is
+identical between the two trees, and both use the same current mabl MCP tool names.
 
 ---
 

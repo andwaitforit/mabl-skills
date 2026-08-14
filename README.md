@@ -30,9 +30,32 @@ with skill-specific usage and gotchas. Start there:
 | `mabl-app-context` | Generates an app-context briefing for mabl's test-creation agent from your **front-end source code** (pages, personas, flows, selectors, quirks). | ✅ | ✅ |
 | `mabl-app-context-crawl` | Generates the same briefing by **crawling a deployed app** in a browser — no source needed (black-box sibling). | ✅ | ✅ |
 | `mabl-failure-rca` | Root-causes a **failed test run** against the source: pulls mabl's AI analysis + artifacts (DOM, HAR, console), correlates with code, and classifies the failure. | ✅ | ✅ |
+| `mabl-coverage-gap` | Finds the user-facing flows your change touches that **no mabl test covers**, rates them by severity, and can author the missing test. | ✅ | ✅ |
+| `mabl-triage-router` | Decides what the loop does next with a classified failure — repair, retry, or escalate — enforcing loop bounds and human gates. | ✅ | ✅ |
+| `ship-gate` | Turns the run signal + mabl release readiness into an auditable `SHIP` / `BLOCK` / `NEEDS_HUMAN` recommendation. Never merges. | ✅ | ✅ |
+| `mabl-test-from-requirement` | Turns a **Jira ticket, Confluence page, or pasted AC** into a new mabl browser or API test, with a duplicate-coverage check and traceability back to the ticket. | ✅ | ✅ |
 | `mabl-dom-sanitizer` | Strips executable JavaScript from a captured mabl DOM snapshot so it can be opened locally without the app forcing a logout/re-hydration. | ✅ | ✅ |
 | `feature-dev` | Orchestrates the full **plan → build → test → ship** lifecycle for a feature — spec, Jira epic, browser-verified build, mabl test coverage, PR — by composing the other skills. 📋 Template. | ✅ | ✅ |
 | _more coming_ | | | |
+
+### They compose into a verification loop
+
+Five of these aren't just individually useful — they chain into a bounded, self-driving
+loop that takes a diff all the way to a ship recommendation:
+
+```
+   your diff ──▶ mabl-pre-pr-check ──▶ mabl-failure-rca ──▶ mabl-triage-router
+                        │                                          │
+                        └──▶ mabl-coverage-gap                     └──▶ auto-repair, re-run
+                                    │                                   (or stop at a human gate)
+                                    └──────────▶ ship-gate ──▶ SHIP / BLOCK / NEEDS_HUMAN
+```
+
+Each skill ends its response with a small JSON object, so a headless runner (n8n, GitHub
+Actions, a shell script) can parse it and branch. The schemas — and the two safety rules the
+loop depends on — are in [`docs/loop-contracts.md`](docs/loop-contracts.md). Every skill
+also works perfectly well on its own; the JSON is additive and skipped for one-off
+interactive use.
 
 ---
 
