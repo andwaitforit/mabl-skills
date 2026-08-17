@@ -9,6 +9,7 @@ same — these are host-adapted copies, not rewrites.
 | [`mabl-pre-pr-check`](mabl-pre-pr-check) | Maps your diff to the mabl tests that cover it and runs them locally before you open the PR. |
 | [`mabl-app-context`](mabl-app-context) | Generates an app-context briefing for mabl's test-creation agent from your **front-end source**. |
 | [`mabl-app-context-crawl`](mabl-app-context-crawl) | Generates the same briefing by **crawling a deployed app** in a browser — no source needed. |
+| [`mabl-app-crawl`](mabl-app-crawl) | Authors a **saved, read-only breadth-crawl test** in mabl that maps the app's pages/views, then serves as reusable **navigational context** for generating specific tests later. |
 | [`mabl-failure-rca`](mabl-failure-rca) | Root-causes a **failed run** against the source: mabl's AI analysis + artifacts (DOM, HAR, console), classified. |
 | [`mabl-coverage-gap`](mabl-coverage-gap) | Finds user-facing flows your change touches that **no test covers**, rated by severity. |
 | [`mabl-triage-router`](mabl-triage-router) | Decides what the loop does next with a classified failure; enforces loop bounds and human gates. |

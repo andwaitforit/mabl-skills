@@ -29,6 +29,7 @@ with skill-specific usage and gotchas. Start there:
 | `mabl-pre-pr-check` | Analyzes your current commit, finds the mabl tests most relevant to what changed, and runs them locally for fast pre-PR feedback. | ✅ | ✅ |
 | `mabl-app-context` | Generates an app-context briefing for mabl's test-creation agent from your **front-end source code** (pages, personas, flows, selectors, quirks). | ✅ | ✅ |
 | `mabl-app-context-crawl` | Generates the same briefing by **crawling a deployed app** in a browser — no source needed (black-box sibling). | ✅ | ✅ |
+| `mabl-app-crawl` | Authors a **saved, read-only breadth-crawl test** in mabl that maps the app's pages/views, then serves as reusable **navigational context** for generating specific tests later. | ✅ | ✅ |
 | `mabl-failure-rca` | Root-causes a **failed test run** against the source: pulls mabl's AI analysis + artifacts (DOM, HAR, console), correlates with code, and classifies the failure. | ✅ | ✅ |
 | `mabl-coverage-gap` | Finds the user-facing flows your change touches that **no mabl test covers**, rates them by severity, and can author the missing test. | ✅ | ✅ |
 | `mabl-triage-router` | Decides what the loop does next with a classified failure — repair, retry, or escalate — enforcing loop bounds and human gates. | ✅ | ✅ |
