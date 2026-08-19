@@ -11,6 +11,10 @@ Each skill also inlines the object it emits in its own `SKILL.md`, so it stays
 self-contained when you copy a single folder into `~/.claude/skills/` or `~/.kiro/skills/`.
 This file is the canonical reference for the whole set.
 
+**See the loop at a glance.** A one-page diagram of how the skills identify, author,
+execute, analyze, and act as the ship verdict — and where each contract below is emitted:
+[light](mabl-verification-loop-light.pdf) · [dark](mabl-verification-loop-dark.pdf).
+
 **Contracts are optional.** For a one-off interactive check, skip them — the prose answer
 is the point. Emit them when a skill runs inside `feature-dev` or an automated loop.
 
